@@ -62,13 +62,69 @@ def task2(A):
 
 def task3(A):
     # PROBLEM 1: DYNAMIC PROGRAMMING
-    print("implement")
+    
+    m = len(A)
+    n = len(A[0])
+    
+    # [stock_idx, buy_day, sell_day, max_profit]
+    result = [0, 0, 0, 0]
+    
+    for i in range(m):
+        min_day = 0
+        for j in range(1, n):
+            profit = A[i][j] - A[i][min_day]
+            
+            if profit > result[3]:
+                result = [i, min_day, j, profit]
+            
+            # track cheapest buy day for the current stock
+            if A[i][j] < A[i][min_day]:
+                min_day = j
+                
+    return tuple(result)
 
 #///////////////////////////////////////////////////////////////////////////////
 
 def task6(priceMatrix, cooldownPeriod):
-    # PROBLEM 3: DYNAMIC PROGRAMMING
-    print("implement")
+    # PROBLEM 3: DYNAMIC PROGRAMMING (Top-Down)
+    
+    stockCount = len(priceMatrix)
+    totalDays = len(priceMatrix[0])
+    
+    # cache: day -> (max_profit, best_transactions)
+    memoMap = [None] * totalDays
+    
+    def computeBestStartingAt(currentDay):
+        # base case: out of bounds
+        if currentDay >= totalDays:
+            return (0, [])
+            
+        if memoMap[currentDay] is not None:
+            return memoMap[currentDay]
+            
+        # option 1: skip today
+        maxProfit, bestTxns = computeBestStartingAt(currentDay + 1)
+        
+        # option 2: buy today, sell on future day k
+        for k in range(currentDay + 1, totalDays):
+            for i in range(stockCount):
+                tradeProfit = priceMatrix[i][k] - priceMatrix[i][currentDay]
+                
+                if tradeProfit > 0:
+                    # enforce wait period before next buy
+                    nextAvailableDay = k + cooldownPeriod + 1
+                    futureProfit, futureTxns = computeBestStartingAt(nextAvailableDay)
+                    currentTotal = futureProfit + tradeProfit
+                    
+                    if currentTotal > maxProfit:
+                        maxProfit = currentTotal
+                        bestTxns = [(i, currentDay, k)] + futureTxns
+                        
+        memoMap[currentDay] = (maxProfit, bestTxns)
+        return memoMap[currentDay]
+        
+    finalProfit, finalSequence = computeBestStartingAt(0)
+    return finalSequence
 
 
 #///////////////////////////////////////////////////////////////////////////////

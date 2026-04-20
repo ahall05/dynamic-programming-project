@@ -130,7 +130,57 @@ def task6(priceMatrix, cooldownPeriod):
 #///////////////////////////////////////////////////////////////////////////////
 
 def task7(priceMatrix, cooldownPeriod):
-    # PROBLEM 3: DYNAMIC PROGRAMMING
-    print("implement")
+    # PROBLEM 3: DYNAMIC PROGRAMMING (Bottom-Up)
+    if not priceMatrix or not priceMatrix[0]:
+        return []
+
+    stockCount = len(priceMatrix)
+    totalDays = len(priceMatrix[0])
+
+    # dp[j] stores the max profit achievable up to day j
+    dp = [0] * totalDays
+
+    # txnTrack[j] stores the transaction sequence that gives dp[j]
+    txnTrack = [[] for _ in range(totalDays)]
+
+    # Process each stock independently
+    for i in range(stockCount):
+        best_buy = priceMatrix[i][0]
+        best_buy_day = 0
+        for j in range(1, totalDays):
+            # Update best_buy using cooldown constraint
+            if j - cooldownPeriod - 1 >= 0:
+                candidate = priceMatrix[i][j] - dp[j - cooldownPeriod - 1]
+            else:
+                candidate = priceMatrix[i][j]
+
+            if candidate < best_buy:
+                best_buy = candidate
+                best_buy_day = j
+                
+            # Compute profit if we sell today
+            profit = priceMatrix[i][j] - best_buy
+
+            # Option 1: skip today
+            if dp[j - 1] > dp[j]:
+                dp[j] = dp[j - 1]
+                txnTrack[j] = txnTrack[j - 1].copy()
+            # Option 2: sell today
+            if profit > 0:
+                if j - cooldownPeriod - 1 >= 0:
+                    prev_profit = dp[j - cooldownPeriod - 1]
+                    prev_txns = txnTrack[j - cooldownPeriod - 1]
+                else:
+                    prev_profit = 0
+                    prev_txns = []
+
+                newProfit = profit + prev_profit
+
+                if newProfit > dp[j]:
+                    dp[j] = newProfit
+                    txnTrack[j] = prev_txns + [(i, best_buy_day, j)]
+
+    return txnTrack[totalDays - 1]
+
 
 
